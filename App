@@ -2,18 +2,28 @@ import static spark.Spark.*;
 import spark.ModelAndView;
 import spark.template.velocity.VelocityTemplateEngine;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class App {
     public static void main(String[] args) {
-
         staticFiles.location("/public");
 
         Cart cart = new Cart();
         PaymentService paymentService = new PaymentService();
 
+        List<String> availableProducts = Arrays.asList("Laptop", "Phone", "Headphones", "Camera");
+
         get("/", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            model.put("products", availableProducts);
+            return new ModelAndView(model, "templates/index.html");
+        }, new VelocityTemplateEngine());
+
+        post("/add-to-cart", (req, res) -> {
+            String product = req.queryParams("product");
+            if (product != null && !product.isEmpty()) {
+                cart.addItem(product);
+            }
             res.redirect("/cart");
             return null;
         });
@@ -21,6 +31,7 @@ public class App {
         get("/cart", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
             model.put("cart", cart.getItems());
+            model.put("error", req.queryParams("error"));
             return new ModelAndView(model, "templates/cart.html");
         }, new VelocityTemplateEngine());
 
