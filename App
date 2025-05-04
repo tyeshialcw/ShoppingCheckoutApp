@@ -1,0 +1,55 @@
+import static spark.Spark.*;
+import spark.ModelAndView;
+import spark.template.velocity.VelocityTemplateEngine;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class App {
+    public static void main(String[] args) {
+
+        staticFiles.location("/public");
+
+        Cart cart = new Cart();
+        PaymentService paymentService = new PaymentService();
+
+        get("/", (req, res) -> {
+            res.redirect("/cart");
+            return null;
+        });
+
+        get("/cart", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            model.put("cart", cart.getItems());
+            return new ModelAndView(model, "templates/cart.html");
+        }, new VelocityTemplateEngine());
+
+        post("/checkout", (req, res) -> {
+            if (cart.isEmpty()) {
+                res.redirect("/cart?error=empty");
+                return null;
+            }
+            return new ModelAndView(null, "templates/checkout.html");
+        }, new VelocityTemplateEngine());
+
+        post("/confirm", (req, res) -> {
+            String address = req.queryParams("address");
+            String card = req.queryParams("card");
+
+            if (!PaymentService.validateCard(card)) {
+                res.redirect("/checkout?error=invalid_card");
+                return null;
+            }
+
+            boolean success = paymentService.processPayment(card);
+
+            if (!success) {
+                res.redirect("/checkout?error=payment_failed");
+                return null;
+            }
+
+            cart.clear();
+            return new ModelAndView(null, "templates/confirm.html");
+        }, new VelocityTemplateEngine());
+    }
+}
