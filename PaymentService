@@ -1,0 +1,11 @@
+public class PaymentService {
+
+    public boolean processPayment(String card) {
+        // Simulate network failures or retry
+        return card != null && card.startsWith("4"); // e.g. Visa simulation
+    }
+
+    public static boolean validateCard(String card) {
+        return card != null && card.matches("\\d{16}");
+    }
+}
